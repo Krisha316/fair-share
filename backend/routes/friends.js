@@ -1,6 +1,7 @@
 const express = require("express");
 const { pool } = require("../db");
 const { pairBalance, statusOf } = require("../helpers");
+const { notify, nameOf } = require("../services");
 
 const router = express.Router();
 
@@ -44,6 +45,7 @@ router.post("/", async (req, res, next) => {
     await pool.query("INSERT INTO friendships (user_id, friend_id) VALUES (?, ?), (?, ?)", [
       req.userId, friend.id, friend.id, req.userId,
     ]);
+    await notify([friend.id], { type: "friend", message: `${await nameOf(req.userId)} added you as a friend` });
     res.json(await describeFriend(req.userId, friend));
   } catch (err) {
     next(err);

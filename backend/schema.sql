@@ -38,7 +38,23 @@ CREATE TABLE IF NOT EXISTS group_members (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- group_id is NULL for personal expenses
+-- group_id is NULL for personal recurring payments
+CREATE TABLE IF NOT EXISTS recurring_expenses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  group_id INT NULL,
+  created_by INT NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  category VARCHAR(30) NOT NULL DEFAULT 'other',
+  frequency VARCHAR(10) NOT NULL,
+  next_due DATE NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (group_id) REFERENCES expense_groups(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- group_id is NULL for personal expenses, recurring_id is set when a recurring payment created it
 CREATE TABLE IF NOT EXISTS expenses (
   id INT AUTO_INCREMENT PRIMARY KEY,
   group_id INT NULL,
@@ -46,9 +62,11 @@ CREATE TABLE IF NOT EXISTS expenses (
   title VARCHAR(150) NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
   category VARCHAR(30) NOT NULL DEFAULT 'other',
+  recurring_id INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (group_id) REFERENCES expense_groups(id) ON DELETE CASCADE,
-  FOREIGN KEY (paid_by) REFERENCES users(id)
+  FOREIGN KEY (paid_by) REFERENCES users(id),
+  FOREIGN KEY (recurring_id) REFERENCES recurring_expenses(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS expense_splits (
@@ -70,4 +88,17 @@ CREATE TABLE IF NOT EXISTS settlements (
   FOREIGN KEY (group_id) REFERENCES expense_groups(id) ON DELETE CASCADE,
   FOREIGN KEY (from_user) REFERENCES users(id),
   FOREIGN KEY (to_user) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  type VARCHAR(30) NOT NULL,
+  message VARCHAR(255) NOT NULL,
+  amount DECIMAL(10,2) NULL,
+  group_id INT NULL,
+  is_read TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES expense_groups(id) ON DELETE SET NULL
 );
